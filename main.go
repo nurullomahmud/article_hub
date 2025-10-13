@@ -19,6 +19,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer app.Db.Close()
 
 	// routes
 	r := routes.SetupRoutes(app)
