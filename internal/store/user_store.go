@@ -33,7 +33,8 @@ func (pg *PostgresUserStore) CreateUser(user *User) (*User, error) {
 	VALUES ($1, $2)
 	RETURNING id
 	`
-
+	
+	// handle password hashing later
 	err = tx.QueryRow(query, user.Email, user.HashedPassword).Scan(&user.ID)
 	if err != nil {
 		return nil, err
@@ -42,5 +43,6 @@ func (pg *PostgresUserStore) CreateUser(user *User) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return user, nil
 }
