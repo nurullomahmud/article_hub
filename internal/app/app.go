@@ -7,6 +7,7 @@ import (
 
 	"github.com/NurulloMahmud/article_hub/internal/api"
 	"github.com/NurulloMahmud/article_hub/internal/store"
+	"github.com/NurulloMahmud/article_hub/migrations"
 )
 
 type Application struct {
@@ -21,6 +22,11 @@ func NewApplication() (*Application, error) {
 	pgDb, err := store.Open()
 	if err != nil {
 		return nil, err
+	}
+
+	err = store.MigrateFS(pgDb, migrations.FS, ".")
+	if err != nil {
+		panic(err)
 	}
 
 	// handlers

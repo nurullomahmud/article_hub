@@ -1,2 +1,6 @@
 - database driver
 go get github.com/jackc/pgx/v4/stdlib
+
+- goose for database migrations
+go install github.com/pressly/goose/v3/cmd/goose@latest
+go get github.com/pressly/goose/v3/cmd/goose@latest
