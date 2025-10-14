@@ -1,6 +1,8 @@
 package store
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 type User struct {
 	ID             int    `json:"id"`
@@ -33,7 +35,7 @@ func (pg *PostgresUserStore) CreateUser(user *User) (*User, error) {
 	VALUES ($1, $2)
 	RETURNING id
 	`
-	
+
 	// handle password hashing later
 	err = tx.QueryRow(query, user.Email, user.HashedPassword).Scan(&user.ID)
 	if err != nil {
@@ -44,5 +46,10 @@ func (pg *PostgresUserStore) CreateUser(user *User) (*User, error) {
 		return nil, err
 	}
 
+	return user, nil
+}
+
+func (pg *PostgresUserStore) GetUserByID(id int64) (*User, error) {
+	user := &User{}
 	return user, nil
 }
