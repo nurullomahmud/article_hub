@@ -1,39 +1,60 @@
 package api
 
 import (
-	"fmt"
+	"encoding/json"
+	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/NurulloMahmud/article_hub/internal/store"
+	"github.com/NurulloMahmud/article_hub/internal/utils"
 )
 
-type ArticleHandler struct{}
+type ArticleHandler struct {
+	articleStore store.ArticleStore
+	logger       *log.Logger
+}
 
-func NewArticle() *ArticleHandler {
-	return &ArticleHandler{}
+func NewArticle(articleStore store.ArticleStore, logger *log.Logger) *ArticleHandler {
+	return &ArticleHandler{
+		articleStore: articleStore,
+		logger:       logger,
+	}
 }
 
 func (ah *ArticleHandler) HandleGetArticleByID(w http.ResponseWriter, r *http.Request) {
-	paramsID := chi.URLParam(r, "id")
-	if paramsID == "" {
-		http.NotFound(w, r)
-		return
-	}
-
-	idInt, err := strconv.ParseInt(paramsID, 10, 64)
+	articleID, err := utils.ReadIDParam(r)
 	if err != nil {
-		http.NotFound(w, r)
+		ah.logger.Printf("Error reading id param: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid article id"})
 		return
 	}
 
-	fmt.Fprintf(w, "This is the article by id %d\n", idInt)
+	article, err := ah.articleStore.GetArticleByID(articleID)
+	if err != nil {
+		ah.logger.Printf("error getting article by id: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"article": article})
 }
 
 func (ah *ArticleHandler) HandleCreateArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Creating an article")
-}
+	var article store.Article
+	err := json.NewDecoder(r.Body).Decode(&article)
+	if err != nil {
+		ah.logger.Printf("error decoding request body: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request sent"})
+		return
+	}
 
-func (ah *ArticleHandler) HandleListArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "List of articles")
+	article.AuthorID = 1 // handle this later
+	createdArticle, err := ah.articleStore.CreateArticle(&article)
+	if err != nil {
+		ah.logger.Printf("error creating article: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, utils.Envelope{"article": createdArticle})
 }

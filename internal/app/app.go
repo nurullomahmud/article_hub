@@ -29,8 +29,11 @@ func NewApplication() (*Application, error) {
 		panic(err)
 	}
 
+	// stores for tables
+	articleStore := store.NewPostgresArticleStore(pgDb)
+
 	// handlers
-	articleHandler := api.NewArticle()
+	articleHandler := api.NewArticle(articleStore, logger)
 
 	app := &Application{
 		Logger:         logger,
