@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -112,4 +113,44 @@ func (ah *ArticleHandler) HandleUpdateArticle(w http.ResponseWriter, r *http.Req
 	}
 
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"article": existingArticle})
+}
+
+func (ah *ArticleHandler) HandleDeleteArticle(w http.ResponseWriter, r *http.Request) {
+	articleID, err := utils.ReadIDParam(r)
+	if err != nil {
+		ah.logger.Printf("error converting id param: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid id data type"})
+		return
+	}
+
+	article, err := ah.articleStore.GetArticleByID(articleID)
+	if err != nil {
+		ah.logger.Printf("error getting article: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	if err == sql.ErrNoRows {
+		http.Error(w, "article not found", http.StatusNotFound)
+	}
+
+	if err != nil {
+		ah.logger.Printf("error getting article: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	err = ah.articleStore.DeleteArticle(article)
+
+	if err == sql.ErrNoRows {
+		http.Error(w, "article not found", http.StatusNotFound)
+	}
+
+	if err != nil {
+		ah.logger.Printf("error deleting article: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "article deleted"})
 }
