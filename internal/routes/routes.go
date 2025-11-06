@@ -8,8 +8,15 @@ import (
 func SetupRoutes(app *app.Application) *chi.Mux {
 	r := chi.NewRouter()
 
+	// article endpoints
 	r.Get("/articles/{id}", app.ArticleHandler.HandleGetArticleByID)
 	r.Post("/articles/", app.ArticleHandler.HandleCreateArticle)
+	r.Put("/articles/{id}", app.ArticleHandler.HandleUpdateArticle)
+	r.Delete("/articles/{id}", app.ArticleHandler.HandleDeleteArticle)
+
+	// user endpoints
+	r.Get("/users/{id}", app.UserHandler.HandleGetUserByID)
+	r.Post("/users/", app.UserHandler.HandleCreateUser)
 	
 	return r
 }
