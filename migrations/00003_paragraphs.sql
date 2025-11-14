@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS paragraphs (
     article_id BIGINT NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
     headline VARCHAR(500) NOT NULL,
     body TEXT NOT NULL,
-    order INT
+    paragraph_order INT
 )
 -- +goose StatementEnd
 
