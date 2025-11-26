@@ -114,9 +114,63 @@ func (th *TokenHandler) HandlePasswordReset(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	var passwordResetRequest struct {
+		Password        string `json:"password"`
+		PasswordConfirm string `json:"password_confirm"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&passwordResetRequest)
+	if err != nil {
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request payload"})
+		return
+	}
+
+	if passwordResetRequest.Password != passwordResetRequest.PasswordConfirm {
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "passwords don't match"})
+		return
+	}
+	if l := len(passwordResetRequest.Password); l < 6 || l > 32 {
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "password length should be between 6 and 32"})
+		return
+	}
+
 	// check if the toke is still valid
 	valid, err := th.tokenStore.ConfirmToken(token, tokens.ScopePasswordReset)
 	if err != nil {
-		
+		th.logger.Printf("error confirming token: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server errro"})
+		return
 	}
+	if !valid {
+		th.logger.Printf("invalid token")
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid token"})
+		return
+	}
+
+	user, err := th.tokenStore.GetUserByToken(token)
+	if err != nil {
+		th.logger.Printf("error getting user by token in handler: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+	if user == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	err = user.HashedPassword.Set(passwordResetRequest.Password)
+	if err != nil {
+		th.logger.Printf("error setting password: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	err = th.userStore.UpdateUser(user)
+	if err != nil {
+		th.logger.Printf("error updating user: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "password reset"})
 }
