@@ -127,6 +127,10 @@ func (h *UserHandler) HandlePasswordChange(w http.ResponseWriter, r *http.Reques
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "passwords do not match"})
 		return
 	}
+	if l := len(passChangeReq.NewPassword); l < 6 || l > 32 {
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "password length should be between 6 and 32"})
+		return
+	}
 	passwordMatched, err := user.HashedPassword.Matches(passChangeReq.NewPassword)
 	if err != nil {
 		h.logger.Printf("Error checking password: %v", err)
