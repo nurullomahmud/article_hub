@@ -54,6 +54,7 @@ type UserStore interface {
 	CreateUser(*User) error
 	GetUserByEmail(email string) (*User, error)
 	UpdateUser(*User) error
+	GetUserByID(id int64) (*User, error)
 }
 
 func (s *PostgresUserStore) CreateUser(user *User) error {
@@ -89,13 +90,32 @@ func (s *PostgresUserStore) GetUserByEmail(email string) (*User, error) {
 	return user, nil
 }
 
+func (s *PostgresUserStore) GetUserByID(id int64) (*User, error) {
+	query := `
+	SELECT id, email, hashed_password FROM users WHERE id = $1
+	`
+	user := &User{
+		HashedPassword: password{},
+	}
+	err := s.db.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.HashedPassword.hash)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (s *PostgresUserStore) UpdateUser(user *User) error {
 	updateUserQuery := `
 	update users
-	set email = $1
+	set email = $1, hashed_password = $3
 	where id = $2
 	`
-	result, err := s.db.Exec(updateUserQuery, user.Email, user.ID)
+	result, err := s.db.Exec(updateUserQuery, user.Email, user.ID, user.HashedPassword.hash)
 	if err != nil {
 		return err
 	}

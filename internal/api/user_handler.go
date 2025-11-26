@@ -92,3 +92,65 @@ func (h *UserHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 
 	utils.WriteJSON(w, http.StatusCreated, utils.Envelope{"user": user})
 }
+
+func (h *UserHandler) HandlePasswordChange(w http.ResponseWriter, r *http.Request) {
+	userID, err := utils.ReadIDParam(r)
+	if err != nil {
+		h.logger.Printf("invalid user id format: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid param id"})
+	}
+
+	user, err := h.userStore.GetUserByID(userID)
+	if err != nil {
+		h.logger.Printf("Error getting user by id: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+	if user == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var passChangeReq struct {
+		OldPassword        string `json:"old_password"`
+		NewPassword        string `json:"new_password"`
+		NewPasswordConfirm string `json:"new_password_confirm"`
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&passChangeReq)
+	if err != nil {
+		h.logger.Printf("Error decoding password change request: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err})
+		return
+	}
+	if passChangeReq.NewPassword != passChangeReq.NewPasswordConfirm {
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "passwords do not match"})
+		return
+	}
+	passwordMatched, err := user.HashedPassword.Matches(passChangeReq.NewPassword)
+	if err != nil {
+		h.logger.Printf("Error checking password: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+	if !passwordMatched {
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "old password is not confirmed"})
+		return
+	}
+
+	err = user.HashedPassword.Set(passChangeReq.NewPassword)
+	if err != nil {
+		h.logger.Printf("error changing password: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	err = h.userStore.UpdateUser(user)
+	if err != nil {
+		h.logger.Printf("Error updating user: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"message": "password changed"})
+}

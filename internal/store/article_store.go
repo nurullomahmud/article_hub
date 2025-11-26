@@ -23,7 +23,9 @@ type PostgresArticleStore struct {
 }
 
 func NewPostgresArticleStore(db *sql.DB) *PostgresArticleStore {
-	return &PostgresArticleStore{}
+	return &PostgresArticleStore{
+		db: db,
+	}
 }
 
 type ArticleStore interface {
