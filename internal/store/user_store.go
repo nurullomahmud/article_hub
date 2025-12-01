@@ -42,6 +42,8 @@ type User struct {
 	HashedPassword password `json:"-"`
 }
 
+var AnonymousUser = &User{}
+
 type PostgresUserStore struct {
 	db *sql.DB
 }
