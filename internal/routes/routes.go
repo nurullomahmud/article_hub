@@ -10,9 +10,14 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 	// article endpoints
 	r.Get("/articles/{id}", app.ArticleHandler.HandleGetArticleByID)
-	r.Post("/articles/", app.ArticleHandler.HandleCreateArticle)
-	r.Put("/articles/{id}", app.ArticleHandler.HandleUpdateArticle)
-	r.Delete("/articles/{id}", app.ArticleHandler.HandleDeleteArticle)
+
+	r.Group(func(r chi.Router) {
+		r.Use(app.Middleware.Authenticate)
+
+		r.Post("/articles/", app.Middleware.RequireUser(app.ArticleHandler.HandleCreateArticle))
+		r.Put("/articles/{id}", app.Middleware.RequireUser(app.ArticleHandler.HandleUpdateArticle))
+		r.Delete("/articles/{id}", app.Middleware.RequireUser(app.ArticleHandler.HandleDeleteArticle))
+	})
 
 	// user endpoints
 	r.Post("/register/", app.UserHandler.HandleRegister)

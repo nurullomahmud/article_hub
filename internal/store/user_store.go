@@ -44,6 +44,10 @@ type User struct {
 
 var AnonymousUser = &User{}
 
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
+}
+
 type PostgresUserStore struct {
 	db *sql.DB
 }
