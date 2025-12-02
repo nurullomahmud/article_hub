@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/NurulloMahmud/article_hub/internal/middleware"
 	"github.com/NurulloMahmud/article_hub/internal/store"
 	"github.com/NurulloMahmud/article_hub/internal/utils"
 )
@@ -49,7 +50,13 @@ func (ah *ArticleHandler) HandleCreateArticle(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	article.AuthorID = 1 // handle this later
+	currentUser := middleware.GetUser(r)
+	if currentUser == nil || currentUser.IsAnonymous() {
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "you must be logged in to create article"})
+		return
+	}
+
+	article.AuthorID = currentUser.ID
 	createdArticle, err := ah.articleStore.CreateArticle(&article)
 	if err != nil {
 		ah.logger.Printf("error creating article: %v", err)
@@ -77,6 +84,12 @@ func (ah *ArticleHandler) HandleUpdateArticle(w http.ResponseWriter, r *http.Req
 
 	if existingArticle == nil {
 		http.NotFound(w, r)
+		return
+	}
+
+	currentUser := middleware.GetUser(r)
+	if currentUser == nil || currentUser.IsAnonymous() || currentUser.ID != existingArticle.AuthorID {
+		utils.WriteJSON(w, http.StatusForbidden, utils.Envelope{"error": "you are not authorized to update this article"})
 		return
 	}
 
@@ -137,6 +150,12 @@ func (ah *ArticleHandler) HandleDeleteArticle(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		ah.logger.Printf("error getting article: %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	currentUser := middleware.GetUser(r)
+	if currentUser == nil || currentUser.IsAnonymous() || currentUser.ID != article.AuthorID {
+		utils.WriteJSON(w, http.StatusForbidden, utils.Envelope{"error": "you are not authorized to delete this article"})
 		return
 	}
 
