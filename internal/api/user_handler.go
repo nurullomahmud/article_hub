@@ -131,7 +131,7 @@ func (h *UserHandler) HandlePasswordChange(w http.ResponseWriter, r *http.Reques
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "password length should be between 6 and 32"})
 		return
 	}
-	passwordMatched, err := user.HashedPassword.Matches(passChangeReq.NewPassword)
+	passwordMatched, err := user.HashedPassword.Matches(passChangeReq.OldPassword)
 	if err != nil {
 		h.logger.Printf("Error checking password: %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})

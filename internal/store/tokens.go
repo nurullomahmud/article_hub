@@ -1,6 +1,7 @@
 package store
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"time"
 
@@ -69,12 +70,14 @@ func (t *PostgresTokenStore) ConfirmToken(token string, scope string) (bool, err
 func (t *PostgresTokenStore) GetUserByToken(token string) (*User, error) {
 	var userID int
 	user := &User{}
+	tokenHash := sha256.Sum256([]byte(token))
+
 	query := `
 	SELECT user_id
 	FROM tokens
-	WHERE token = $1
+	WHERE hash = $1
 	`
-	err := t.db.QueryRow(query, token).Scan(&userID)
+	err := t.db.QueryRow(query, tokenHash[:]).Scan(&userID)
 	if err != nil {
 		return nil, err
 	}

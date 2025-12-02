@@ -17,13 +17,14 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Post("/articles/", app.Middleware.RequireUser(app.ArticleHandler.HandleCreateArticle))
 		r.Put("/articles/{id}", app.Middleware.RequireUser(app.ArticleHandler.HandleUpdateArticle))
 		r.Delete("/articles/{id}", app.Middleware.RequireUser(app.ArticleHandler.HandleDeleteArticle))
+		r.Post("/users/{id}/password-change/", app.Middleware.RequireUser(app.UserHandler.HandlePasswordChange))
 	})
 
 	// user endpoints
 	r.Post("/register/", app.UserHandler.HandleRegister)
+	r.Post("/login/", app.TokenHandler.HandleCreateToken)
 
 	// password change and reset endpoints
-	r.Post("/users/{id}/password-change/", app.UserHandler.HandlePasswordChange)
 	r.Post("/tokens/{email}/password-reset-request/", app.TokenHandler.HandlePasswordResetRequestToken)
 	r.Post("/tokens/{token}/password-reset/", app.TokenHandler.HandlePasswordReset)
 

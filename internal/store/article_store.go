@@ -55,7 +55,7 @@ func (pg *PostgresArticleStore) CreateArticle(article *Article) (*Article, error
 
 	for _, paragraph := range article.Paragraphs {
 		paragraphQuery := `
-		INSERT INTO (article_id, headline, body, order)
+		INSERT INTO paragraphs (article_id, headline, body, paragraph_order)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 		`
